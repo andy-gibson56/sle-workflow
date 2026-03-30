@@ -1,0 +1,1236 @@
+<!--
+   ______                            __
+  / ____/___  ____ ___  ____  __  __/ /____  _____
+ / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ ___/
+/ /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /
+\____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_/
+                    /_/
+        Created with Perplexity Computer
+        https://www.perplexity.ai/computer
+-->
+
+<!-- Perplexity Computer Attribution — SEO Meta Tags -->
+<meta name="generator" content="Perplexity Computer">
+<meta name="author" content="Perplexity Computer">
+<meta property="og:see_also" content="https://www.perplexity.ai/computer">
+<link rel="author" href="https://www.perplexity.ai/computer">
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Co-op SLE Deployment Workflow</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --text-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
+      --text-sm:   clamp(0.875rem, 0.8rem  + 0.35vw, 1rem);
+      --text-base: clamp(1rem,     0.95rem + 0.25vw, 1.125rem);
+      --text-lg:   clamp(1.125rem, 1rem    + 0.75vw, 1.5rem);
+      --text-xl:   clamp(1.5rem,   1.2rem  + 1.25vw, 2.25rem);
+
+      --space-1: 0.25rem; --space-2: 0.5rem;  --space-3: 0.75rem;
+      --space-4: 1rem;    --space-5: 1.25rem; --space-6: 1.5rem;
+      --space-8: 2rem;    --space-10: 2.5rem; --space-12: 3rem;
+
+      --coop-blue: #00a1cc;
+      --coop-teal: #007D8A;
+      --coop-teal-light: #009DB5;
+      --coop-green: #00B140;
+      --coop-amber: #F5A800;
+      --coop-red: #D93A2B;
+
+      --bg: #F7F9FC;
+      --surface: #FFFFFF;
+      --surface-2: #EEF2F8;
+      --border: #DDE3EE;
+      --text-primary: #0D1B3E;
+      --text-secondary: #4A5568;
+      --text-muted: #7A8BA6;
+      --accent: var(--coop-teal);
+      --header-bg: #00a1cc;
+      --header-text: #FFFFFF;
+
+      --shadow-sm: 0 1px 3px rgba(0,32,91,0.08), 0 1px 2px rgba(0,32,91,0.06);
+      --shadow-md: 0 4px 12px rgba(0,32,91,0.10), 0 2px 6px rgba(0,32,91,0.06);
+      --shadow-lg: 0 8px 32px rgba(0,32,91,0.16);
+      --radius: 10px;
+      --radius-sm: 6px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0B1428;
+      --surface: #132040;
+      --surface-2: #1B2D55;
+      --border: #253A63;
+      --text-primary: #E8EDF7;
+      --text-secondary: #A8B8D4;
+      --text-muted: #6A80A0;
+      --header-bg: #007fa3;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: var(--text-base);
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: var(--space-4) var(--space-8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: var(--space-6);
+    }
+
+    .header-titles {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .header-titles h1 {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .header-titles p { font-size: var(--text-xs); opacity: 0.7; margin-top: 2px; }
+
+
+    /* ── LEGEND BAR ── */
+    .legend-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: var(--space-3) var(--space-8);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      row-gap: var(--space-2);
+    }
+
+    .legend-label {
+      font-size: var(--text-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .legend-items { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+
+    .legend-item {
+      display: flex; align-items: center; gap: var(--space-2);
+      font-size: var(--text-xs); color: var(--text-secondary);
+      cursor: pointer;
+      padding: var(--space-1) var(--space-3);
+      border-radius: 20px;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .legend-item:hover { background: var(--surface-2); border-color: var(--border); }
+    .legend-item.active { border-color: var(--accent); background: rgba(0,125,138,0.08); }
+
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    .dot-requesting { background: #3B82F6; }
+    .dot-home       { background: #8B5CF6; }
+    .dot-pdi        { background: var(--coop-teal); }
+    .dot-approval   { background: var(--coop-amber); }
+    .dot-declined   { background: var(--coop-red); }
+    .dot-complete   { background: var(--coop-green); }
+
+    .legend-divider {
+      width: 1px; height: 18px;
+      background: var(--border);
+    }
+
+    /* ── TABS ── */
+    .tabs-bar {
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      padding: 0 var(--space-8);
+      display: flex;
+      gap: 0;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      padding: var(--space-3) var(--space-5);
+      font-family: inherit;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-btn:hover:not(.active) { color: var(--text-primary); }
+
+    /* ── PAGE WRAPPER ── */
+    .page-wrapper { display: flex; flex-direction: column; }
+
+    /* ── ROLES TOOLBAR (horizontal, shown on all tabs) ── */
+    .roles-toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: var(--space-2) var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) 0;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-row + .toolbar-row {
+      border-top: 1px solid var(--border);
+    }
+
+    .toolbar-label {
+      font-size: var(--text-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .role-chip {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+      font-size: var(--text-xs);
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .role-chip:hover { border-color: var(--accent); color: var(--text-primary); }
+    .role-chip.active { border-color: var(--accent); background: rgba(0,125,138,0.1); color: var(--accent); }
+
+    .role-chip-icon {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .rci-blue   { background: rgba(59,130,246,0.15);  color: #3B82F6; }
+    .rci-purple { background: rgba(139,92,246,0.15);  color: #8B5CF6; }
+    .rci-teal   { background: rgba(0,125,138,0.15);   color: var(--coop-teal); }
+
+    /* Stage nav pills in toolbar */
+    .stage-pill {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-1) var(--space-3);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .stage-pill:hover { background: var(--surface-2); border-color: var(--accent); }
+
+    .sp-dot {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      font-size: 9px;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    /* ── FULL-WIDTH CONTENT AREA ── */
+    .content-area {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+    }
+
+    /* ── FLOWCHART SECTION ── */
+    .diagram-outer {
+      padding: var(--space-6);
+      position: relative;
+    }
+
+    .diagram-controls {
+      display: flex;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .ctrl-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--text-xs);
+      font-family: inherit;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex; align-items: center; gap: var(--space-1);
+    }
+    .ctrl-btn:hover { background: var(--surface-2); border-color: var(--accent); color: var(--accent); }
+    .ctrl-hint { font-size: var(--text-xs); color: var(--text-muted); margin-left: auto; }
+
+    .mermaid-wrapper {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-md);
+      overflow-x: auto;
+      overflow-y: visible;
+      transition: background 0.2s;
+    }
+
+    .mermaid-wrapper .mermaid {
+      display: block;
+      min-width: 900px;
+    }
+
+    .mermaid-wrapper svg {
+      min-width: 900px;
+      width: 100% !important;
+      height: auto !important;
+      max-width: none !important;
+    }
+
+    /* ── DETAIL DRAWER (slides in from right) ── */
+    .detail-drawer {
+      position: fixed;
+      top: 0;
+      right: -480px;
+      width: 460px;
+      max-width: 95vw;
+      height: 100vh;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      box-shadow: var(--shadow-lg);
+      z-index: 300;
+      transition: right 0.28s cubic-bezier(0.4,0,0.2,1);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .detail-drawer.open { right: 0; }
+
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 299;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .drawer-overlay.visible { opacity: 1; pointer-events: all; }
+
+    .drawer-header {
+      padding: var(--space-5) var(--space-6);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4);
+      position: sticky; top: 0;
+      background: var(--surface);
+      z-index: 1;
+    }
+
+    .drawer-badge {
+      display: inline-flex; align-items: center;
+      padding: 2px var(--space-3);
+      border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      margin-bottom: var(--space-2);
+    }
+
+    .drawer-title {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    .close-drawer {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-2) var(--space-3);
+      cursor: pointer;
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      font-family: inherit;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .close-drawer:hover { border-color: var(--coop-red); color: var(--coop-red); }
+
+    .drawer-body { padding: var(--space-5) var(--space-6); flex: 1; }
+
+    .drawer-desc {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      margin-bottom: var(--space-5);
+      line-height: 1.6;
+    }
+
+    .drawer-block {
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    .drawer-block-title {
+      font-size: var(--text-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: var(--space-3);
+    }
+
+    .drawer-list { list-style: none; padding: 0; }
+    .drawer-list li {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      padding: var(--space-1) 0;
+      display: flex; align-items: flex-start; gap: var(--space-2);
+      border-bottom: 1px solid var(--border);
+    }
+    .drawer-list li:last-child { border-bottom: none; }
+    .drawer-list li::before { content: '→'; color: var(--accent); flex-shrink: 0; font-weight: 700; margin-top: 1px; }
+
+    /* ── SWIMLANE VIEW ── */
+    .swimlane-outer { padding: var(--space-6); }
+
+    .swimlane-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+
+    .swimlane-header {
+      display: grid;
+      grid-template-columns: 160px 1fr 1fr 1fr;
+      background: var(--coop-blue);
+      color: white;
+    }
+
+    .sh-cell {
+      padding: var(--space-3) var(--space-4);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-right: 1px solid rgba(255,255,255,0.15);
+      text-align: center;
+    }
+    .sh-cell:first-child { text-align: left; }
+
+    .swimlane-row {
+      display: grid;
+      grid-template-columns: 160px 1fr 1fr 1fr;
+      border-top: 1px solid var(--border);
+      min-height: 80px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .swimlane-row:hover { background: var(--surface-2); }
+
+    .sr-stage {
+      padding: var(--space-3) var(--space-4);
+      border-right: 1px solid var(--border);
+      background: var(--surface-2);
+      display: flex; align-items: center; gap: var(--space-2);
+    }
+
+    .sr-stage-label { font-size: var(--text-xs); font-weight: 700; color: var(--text-secondary); line-height: 1.3; }
+
+    .sr-cell {
+      padding: var(--space-3) var(--space-4);
+      border-right: 1px solid var(--border);
+      font-size: var(--text-xs);
+      color: var(--text-secondary);
+    }
+    .sr-cell:last-child { border-right: none; }
+
+    .action-tag {
+      display: inline-flex; align-items: center; gap: var(--space-1);
+      padding: 2px var(--space-2);
+      border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+      margin: 2px 2px 2px 0;
+    }
+
+    .tag-blue   { background: rgba(59,130,246,0.12);  color: #2563EB; }
+    .tag-purple { background: rgba(139,92,246,0.12);  color: #7C3AED; }
+    .tag-teal   { background: rgba(0,125,138,0.12);   color: var(--coop-teal); }
+    .tag-amber  { background: rgba(245,168,0,0.15);   color: #B45309; }
+    .tag-green  { background: rgba(0,177,64,0.12);    color: #166534; }
+    .tag-red    { background: rgba(217,58,43,0.12);   color: #B91C1C; }
+
+    /* ── CHECKLIST VIEW ── */
+    .checklist-outer { padding: var(--space-6); }
+
+    .checklist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .checklist-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .cc-header {
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 2px solid;
+      display: flex; align-items: center; gap: var(--space-3);
+    }
+
+    .cc-num {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      color: white; flex-shrink: 0;
+    }
+
+    .cc-body { padding: var(--space-4); }
+
+    .cc-item {
+      display: flex; align-items: flex-start; gap: var(--space-3);
+      padding: var(--space-2) 0;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+    }
+    .cc-item:last-of-type { border-bottom: none; }
+
+    .cc-item input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
+
+    .cc-item span {
+      font-size: var(--text-xs);
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .cc-progress-bar {
+      margin-top: var(--space-3);
+      height: 4px;
+      background: var(--surface-2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .cc-progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+    .cc-progress-label { font-size: 10px; color: var(--text-muted); margin-top: 4px; text-align: right; }
+
+    /* stage-number (for stage nav pills) */
+    .stage-number {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; color: white;
+    }
+    .sn-blue   { background: #3B82F6; }
+    .sn-purple { background: #8B5CF6; }
+    .sn-teal   { background: var(--coop-teal); }
+    .sn-amber  { background: var(--coop-amber); color: #1a1a1a; }
+    .sn-green  { background: var(--coop-green); }
+    .sn-red    { background: var(--coop-red); }
+
+    /* ── VIEWS SHOW/HIDE ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #003057;
+      border-top: none;
+      padding: var(--space-6) var(--space-8);
+    }
+    .footer-flex {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-6);
+    }
+    .footer-logo {
+      flex-shrink: 0;
+    }
+    .footer-logo img {
+      width: 200px;
+      height: auto;
+      display: block;
+    }
+    .footer-text {
+      flex: 1;
+    }
+    footer p {
+      font-size: var(--text-xs);
+      color: rgba(255,255,255,0.85);
+      line-height: 1.6;
+      margin: 0;
+    }
+    footer a { color: rgba(255,255,255,0.6); text-decoration: none; }
+    footer a:hover { color: white; text-decoration: underline; }
+
+
+    /* ── STATUS FILTER ── */
+    .swimlane-row.status-dimmed {
+      opacity: 0.2;
+      filter: grayscale(0.6);
+      transition: opacity 0.2s, filter 0.2s;
+    }
+    .swimlane-row.status-highlighted {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+      transition: opacity 0.2s;
+    }
+    .swimlane-row.status-dimmed:hover {
+      opacity: 0.35;
+    }
+    .filter-active-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: 2px var(--space-3);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      margin-left: var(--space-3);
+      cursor: pointer;
+    }
+    .filter-active-badge:hover { border-color: var(--coop-red); color: var(--coop-red); }
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .swimlane-header, .swimlane-row { grid-template-columns: 120px 1fr 1fr 1fr; }
+      header { padding: var(--space-4); }
+      .legend-bar, .tabs-bar { padding: var(--space-3) var(--space-4); }
+    }
+    @media (max-width: 640px) {
+      .swimlane-header, .swimlane-row { grid-template-columns: 90px 1fr; }
+      .sh-cell:nth-child(3), .sh-cell:nth-child(4),
+      .sr-cell:nth-child(3), .sr-cell:nth-child(4) { display: none; }
+      .detail-drawer { width: 100%; max-width: 100vw; }
+    }
+.mermaid-wrapper { box-shadow: none; border: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Drawer overlay -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<!-- Detail Drawer -->
+<div class="detail-drawer" id="detailDrawer">
+  <div class="drawer-header">
+    <div style="flex:1; min-width:0;">
+      <span id="drawerBadge" class="drawer-badge"></span>
+      <div id="drawerTitle" class="drawer-title"></div>
+    </div>
+    <button class="close-drawer" onclick="closeDrawer()">✕ Close</button>
+  </div>
+  <div class="drawer-body">
+    <p id="drawerDesc" class="drawer-desc"></p>
+    <div id="drawerBlocks"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-brand">
+    <img src="https://i.ibb.co/S702DWdq/Untitled-800-x-300-px-3.png" alt="Co-op Academies" style="height:64px; width:auto; display:block; flex-shrink:0;">
+    <div class="header-titles">
+      <h1>Co-op Academies Trust</h1>
+      <p>SLE Deployment Workflow — Approval Stages &amp; Roles</p>
+    </div>
+  </div>
+</header>
+
+<!-- LEGEND BAR -->
+<div class="legend-bar">
+  <span class="legend-label">Roles</span>
+  <div class="legend-items">
+    <div class="legend-item" id="legend-requesting" onclick="highlightRole('requesting')">
+      <div class="legend-dot dot-requesting"></div>Requesting Academy (HT / SLT / Admin)
+    </div>
+    <div class="legend-item" id="legend-home" onclick="highlightRole('home')">
+      <div class="legend-dot dot-home"></div>Home Academy (SLE / Headteacher)
+    </div>
+    <div class="legend-item" id="legend-pdi" onclick="highlightRole('pdi')">
+      <div class="legend-dot dot-pdi"></div>PDI Team
+    </div>
+  </div>
+  <div class="legend-divider"></div>
+  <span class="legend-label">Status</span>
+  <div class="legend-items">
+    <div class="legend-item" id="legend-approval" onclick="filterStatus('awaiting-approval')"><div class="legend-dot dot-approval"></div>Awaiting Approval</div>
+    <div class="legend-item" id="legend-complete" onclick="filterStatus('completed')"><div class="legend-dot dot-complete"></div>Completed</div>
+    <div class="legend-item" id="legend-declined" onclick="filterStatus('declined')"><div class="legend-dot dot-declined"></div>Declined</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-bar">
+  <button class="tab-btn active" id="tab-flowchart" onclick="switchTab('flowchart')">Flowchart</button>
+  <button class="tab-btn" id="tab-swimlane"  onclick="switchTab('swimlane')">Swimlane Table</button>
+  <button class="tab-btn" id="tab-checklist" onclick="switchTab('checklist')">Stage Checklist</button>
+</div>
+
+<!-- ROLES TOOLBAR (shown on all tabs) -->
+<div class="roles-toolbar" id="rolesToolbar">
+  <div class="toolbar-row">
+    <span class="toolbar-label">Roles</span>
+    <div class="role-chip" id="chip-ht" onclick="selectRole('ht')">
+      <div class="role-chip-icon rci-blue">🏫</div>Headteacher (Req.)
+    </div>
+    <div class="role-chip" id="chip-slt" onclick="selectRole('slt')">
+      <div class="role-chip-icon rci-blue">👥</div>SLT Member
+    </div>
+    <div class="role-chip" id="chip-admin" onclick="selectRole('admin')">
+      <div class="role-chip-icon rci-blue">📋</div>Admin
+    </div>
+    <div class="role-chip" id="chip-sle" onclick="selectRole('sle')">
+      <div class="role-chip-icon rci-purple">⭐</div>SLE
+    </div>
+    <div class="role-chip" id="chip-homeht" onclick="selectRole('homeht')">
+      <div class="role-chip-icon rci-purple">🏠</div>Home HT
+    </div>
+    <div class="role-chip" id="chip-pdi" onclick="selectRole('pdi')">
+      <div class="role-chip-icon rci-teal">🎓</div>PDI Team
+    </div>
+  </div>
+  <div class="toolbar-row">
+    <span class="toolbar-label">Stages</span>
+    <div class="stage-pill" onclick="openStageDetail('S1')"><div class="sp-dot sn-blue">1</div>Request</div>
+    <div class="stage-pill" onclick="openStageDetail('S2')"><div class="sp-dot sn-blue">2</div>Scoping</div>
+    <div class="stage-pill" onclick="openStageDetail('S3')"><div class="sp-dot sn-teal">3</div>PDI Match</div>
+    <div class="stage-pill" onclick="openStageDetail('S4')"><div class="sp-dot sn-purple">4</div>Home HT</div>
+    <div class="stage-pill" onclick="openStageDetail('S5')"><div class="sp-dot sn-purple">5</div>SLE Agree</div>
+    <div class="stage-pill" onclick="openStageDetail('S6')"><div class="sp-dot sn-amber">6</div>HT Sign-off</div>
+    <div class="stage-pill" onclick="openStageDetail('S7')"><div class="sp-dot sn-teal">7</div>PDI Confirm</div>
+    <div class="stage-pill" onclick="openStageDetail('S8')"><div class="sp-dot sn-green">8</div>Active</div>
+    <div class="stage-pill" onclick="openStageDetail('S9')"><div class="sp-dot sn-green">9</div>Review</div>
+  </div>
+</div>
+
+<!-- PAGE WRAPPER -->
+<div class="page-wrapper">
+  <div class="content-area">
+
+    <!-- ── FLOWCHART VIEW ── -->
+    <div class="view active" id="view-flowchart">
+      <div class="diagram-outer">
+        <div class="diagram-controls">
+          <button class="ctrl-btn" onclick="zoomIn()">＋ Zoom In</button>
+          <button class="ctrl-btn" onclick="zoomOut()">－ Zoom Out</button>
+          <button class="ctrl-btn" onclick="resetZoom()">↺ Reset</button>
+          <span class="ctrl-hint">Scroll horizontally to see full diagram · Click a stage pill above for details</span>
+        </div>
+        <div id="diagramScaler" style="transform-origin: top left; transition: transform 0.2s;">
+          <div class="mermaid-wrapper">
+            <div class="mermaid" id="mermaidChart">
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#EEF4FF',
+    'primaryTextColor': '#1a2a4a',
+    'primaryBorderColor': '#3B82F6',
+    'lineColor': '#7A8BA6',
+    'secondaryColor': '#F0F4FF',
+    'tertiaryColor': '#F5F3FF',
+    'noteBkgColor': '#FFFBEB',
+    'noteBorderColor': '#F5A800',
+    'noteTextColor': '#1a1a1a',
+    'edgeLabelBackground': '#F7F9FC',
+    'fontSize': '13px',
+    'fontFamily': 'Inter, system-ui, sans-serif'
+  }
+}}%%
+flowchart LR
+    START([🏫 Need Identified\nRequesting HT / SLT]):::requesting
+
+    S1[/📋 STAGE 1\nDeployment Request\nAdmin submits form/]:::requesting
+    S2[📝 STAGE 2\nNeeds & Scoping\nPDI scoping call\nObjectives agreed]:::requesting
+
+    S3{🎓 PDI REVIEW\nSLE register search\nMatch identified?}:::pdi
+
+    NOMATCH([❌ No Match\nPDI advises HT\nof alternatives]):::declined
+
+    S4{🏠 HOME HT\nAPPROVAL\nReviews & approves\nSLE release}:::home
+
+    DECLINED1([🚫 Home HT Declines\nCapacity / Timing\nAlternative sought]):::declined
+
+    S5{⭐ SLE\nAGREEMENT\nReviews brief\nConfirms consent}:::home
+
+    SLENOPE([🚫 SLE Declines\nCapacity issue\nRe-match needed]):::declined
+
+    S6{✅ REQUESTING HT\nSIGN-OFF\nReviews full brief\n& SLE match}:::requesting
+
+    REQ_REV([🔄 Revision\nHT requests changes\nReturns to Stage 2]):::requesting
+
+    S7[📧 PDI CONFIRMATION\nDeployment agreement\nDates & funding confirmed]:::pdi
+
+    S8([🟢 DEPLOYMENT ACTIVE\nSLE delivers programme\nPDI mid-point check]):::complete
+
+    CLOSE([✅ DEPLOYMENT COMPLETE\nEvaluation & impact report\nCase closed & archived]):::complete
+
+    EXTEND{🔁 Extend\nor Renew?}:::pdi
+
+    END_NODE([🏁 Case Closed\nRecords Archived]):::complete
+
+    START --> S1 --> S2 --> S3
+
+    S3 -->|Match found| S4
+    S3 -->|No match| NOMATCH
+
+    S4 -->|Approved ✓| S5
+    S4 -->|Declined ✗| DECLINED1
+    DECLINED1 -->|Alternative| S3
+
+    S5 -->|Agreed ✓| S6
+    S5 -->|Unavailable| SLENOPE
+    SLENOPE -->|Re-match| S3
+
+    S6 -->|Approved ✓| S7
+    S6 -->|Revisions| REQ_REV
+    REQ_REV -->|Revised brief| S2
+
+    S7 --> S8 --> CLOSE --> EXTEND
+    EXTEND -->|Yes| S1
+    EXTEND -->|No| END_NODE
+
+    classDef requesting fill:#DBEAFE,stroke:#3B82F6,stroke-width:2px,color:#1E3A8A
+    classDef home      fill:#EDE9FE,stroke:#8B5CF6,stroke-width:2px,color:#4C1D95
+    classDef pdi       fill:#CCFBF1,stroke:#007D8A,stroke-width:2px,color:#134E4A
+    classDef complete  fill:#DCFCE7,stroke:#00B140,stroke-width:2px,color:#14532D
+    classDef declined  fill:#FEE2E2,stroke:#D93A2B,stroke-width:2px,color:#7F1D1D
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SWIMLANE VIEW ── -->
+    <div class="view" id="view-swimlane">
+      <div class="swimlane-outer">
+        <div class="swimlane-container">
+          <div class="swimlane-header">
+            <div class="sh-cell">Stage</div>
+            <div class="sh-cell" style="color:#93C5FD;">Requesting Academy<br><small style="opacity:0.7;font-weight:400">HT · SLT · Admin</small></div>
+            <div class="sh-cell" style="color:#C4B5FD;">Home Academy<br><small style="opacity:0.7;font-weight:400">SLE · Headteacher</small></div>
+            <div class="sh-cell" style="color:#99F6E4;">PDI Team<br><small style="opacity:0.7;font-weight:400">Co-op Trust</small></div>
+          </div>
+
+          <div class="swimlane-row" data-status="neutral" onclick="openStageDetail('S1')">
+            <div class="sr-stage"><div class="stage-number sn-blue">1</div><div class="sr-stage-label">Deployment Request</div></div>
+            <div class="sr-cell"><span class="action-tag tag-blue">HT identifies need</span><span class="action-tag tag-blue">Admin submits form</span><span class="action-tag tag-blue">SLT briefs context</span></div>
+            <div class="sr-cell" style="color:var(--text-muted);font-style:italic;font-size:11px;">Not yet involved</div>
+            <div class="sr-cell"><span class="action-tag tag-teal">Receives request</span><span class="action-tag tag-teal">Logs case</span></div>
+          </div>
+
+          <div class="swimlane-row" data-status="neutral" onclick="openStageDetail('S2')">
+            <div class="sr-stage"><div class="stage-number sn-blue">2</div><div class="sr-stage-label">Needs &amp; Scoping</div></div>
+            <div class="sr-cell"><span class="action-tag tag-blue">HT defines objectives</span><span class="action-tag tag-blue">SLT sets success criteria</span><span class="action-tag tag-blue">Confirm timeline</span></div>
+            <div class="sr-cell" style="color:var(--text-muted);font-style:italic;font-size:11px;">Not yet involved</div>
+            <div class="sr-cell"><span class="action-tag tag-teal">PDI scoping call</span><span class="action-tag tag-teal">Drafts deployment brief</span></div>
+          </div>
+
+          <div class="swimlane-row" data-status="declined" onclick="openStageDetail('S3')">
+            <div class="sr-stage"><div class="stage-number sn-teal">3</div><div class="sr-stage-label">PDI Review &amp; Match</div></div>
+            <div class="sr-cell" style="color:var(--text-muted);font-style:italic;font-size:11px;">Awaiting outcome</div>
+            <div class="sr-cell" style="color:var(--text-muted);font-style:italic;font-size:11px;">Not yet contacted</div>
+            <div class="sr-cell"><span class="action-tag tag-teal">Reviews brief</span><span class="action-tag tag-teal">Searches SLE register</span><span class="action-tag tag-teal">Identifies match</span><span class="action-tag tag-red" style="background:rgba(217,58,43,0.12);color:#B91C1C;">No match → advises HT</span></div>
+          </div>
+
+          <div class="swimlane-row" data-status="awaiting-approval declined" onclick="openStageDetail('S4')">
+            <div class="sr-stage"><div class="stage-number sn-purple">4</div><div class="sr-stage-label">Home HT Approval</div></div>
+            <div class="sr-cell" style="color:var(--text-muted);font-style:italic;font-size:11px;">Awaiting approval</div>
+            <div class="sr-cell"><span class="action-tag tag-purple">Home HT reviews brief</span><span class="action-tag tag-purple">Checks SLE capacity</span><span class="action-tag tag-green">Approves ✓</span><span class="action-tag" style="background:rgba(217,58,43,0.12);color:#B91C1C;">OR Declines ✗</span></div>
+            <div class="sr-cell"><span class="action-tag tag-teal">Contacts Home HT</span><span class="action-tag tag-teal">Shares brief</span></div>
+          </div>
+
+          <div class="swimlane-row" data-status="awaiting-approval declined" onclick="openStageDetail('S5')">
+            <div class="sr-stage"><div class="stage-number sn-purple">5</div><div class="sr-stage-label">SLE Agreement</div></div>
+            <div class="sr-cell" style="color:var(--text-muted);font-style:italic;font-size:11px;">Awaiting confirmation</div>
+            <div class="sr-cell"><span class="action-tag tag-purple">SLE reviews brief</span><span class="action-tag tag-purple">Confirms capacity</span><span class="action-tag tag-green">Agrees ✓</span><span class="action-tag" style="background:rgba(217,58,43,0.12);color:#B91C1C;">OR Declines ✗</span></div>
+            <div class="sr-cell"><span class="action-tag tag-teal">Sends brief to SLE</span><span class="action-tag tag-teal">Records consent</span></div>
+          </div>
+
+          <div class="swimlane-row" data-status="awaiting-approval" onclick="openStageDetail('S6')">
+            <div class="sr-stage"><div class="stage-number sn-amber">6</div><div class="sr-stage-label">Requesting HT Sign-off</div></div>
+            <div class="sr-cell"><span class="action-tag tag-blue">HT reviews full brief</span><span class="action-tag tag-blue">Confirms SLE match</span><span class="action-tag tag-green">Approves ✓</span><span class="action-tag tag-amber">OR requests revision</span></div>
+            <div class="sr-cell" style="color:var(--text-muted);font-style:italic;font-size:11px;">Awaiting sign-off</div>
+            <div class="sr-cell"><span class="action-tag tag-teal">Sends full brief to Req. HT</span></div>
+          </div>
+
+          <div class="swimlane-row" data-status="neutral" onclick="openStageDetail('S7')">
+            <div class="sr-stage"><div class="stage-number sn-teal">7</div><div class="sr-stage-label">PDI Confirmation</div></div>
+            <div class="sr-cell"><span class="action-tag tag-blue">Receives agreement</span><span class="action-tag tag-blue">Confirms dates</span></div>
+            <div class="sr-cell"><span class="action-tag tag-purple">Receives agreement</span><span class="action-tag tag-purple">SLE confirms readiness</span></div>
+            <div class="sr-cell"><span class="action-tag tag-teal">Issues agreement</span><span class="action-tag tag-teal">Confirms dates &amp; funding</span><span class="action-tag tag-teal">Notifies all parties</span></div>
+          </div>
+
+          <div class="swimlane-row" data-status="completed" onclick="openStageDetail('S8')">
+            <div class="sr-stage"><div class="stage-number sn-green">8</div><div class="sr-stage-label">Deployment Active</div></div>
+            <div class="sr-cell"><span class="action-tag tag-blue">HT / SLT hosts SLE</span><span class="action-tag tag-blue">Engages programme</span><span class="action-tag tag-blue">Admin coordinates</span></div>
+            <div class="sr-cell"><span class="action-tag tag-purple">SLE delivers sessions</span><span class="action-tag tag-purple">Home HT monitors</span><span class="action-tag tag-purple">SLE logs notes</span></div>
+            <div class="sr-cell"><span class="action-tag tag-teal">Mid-point check-in</span><span class="action-tag tag-teal">Monitors outcomes</span></div>
+          </div>
+
+          <div class="swimlane-row" data-status="completed" onclick="openStageDetail('S9')">
+            <div class="sr-stage"><div class="stage-number sn-green">9</div><div class="sr-stage-label">Review &amp; Close</div></div>
+            <div class="sr-cell"><span class="action-tag tag-blue">HT completes eval</span><span class="action-tag tag-blue">SLT reviews impact</span></div>
+            <div class="sr-cell"><span class="action-tag tag-purple">SLE submits final report</span><span class="action-tag tag-purple">Home HT reviews record</span></div>
+            <div class="sr-cell"><span class="action-tag tag-teal">PDI collates data</span><span class="action-tag tag-teal">Archives case</span><span class="action-tag tag-teal">Updates SLE register</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CHECKLIST VIEW ── -->
+    <div class="view" id="view-checklist">
+      <div class="checklist-outer">
+        <div class="checklist-grid" id="checklistGrid"></div>
+      </div>
+    </div>
+
+  </div><!-- end content-area -->
+</div><!-- end page-wrapper -->
+
+<footer>
+  <div class="footer-flex">
+    <div class="footer-logo">
+      <a href="#"><img src="https://i.ibb.co/kggsqQH4/Untitled-design-24.png" alt="PDI Logo" border="0"></a>
+    </div>
+    <div class="footer-text">
+      <p>
+        Co-op Academies Trust Professional Development Institute<br>
+        One Angel Square, Manchester, M60 0AG, United Kingdom<br>
+        Email: PDI@coopacademies.co.uk<br>
+        Phone: 0161 413 3649 | Option 5<br>
+        &copy;2026 Co-op Academies Trust &nbsp;&middot;&nbsp;
+        <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer">Created with Perplexity Computer</a>
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── Zoom ──
+  let zoomLevel = 1;
+  function zoomIn()    { zoomLevel = Math.min(zoomLevel + 0.15, 2.5); applyZoom(); }
+  function zoomOut()   { zoomLevel = Math.max(zoomLevel - 0.15, 0.4); applyZoom(); }
+  function resetZoom() { zoomLevel = 1; applyZoom(); }
+  function applyZoom() { document.getElementById('diagramScaler').style.transform = `scale(${zoomLevel})`; }
+
+  // ── Mermaid ──
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    flowchart: { curve: 'basis', useMaxWidth: false },
+    themeVariables: {
+      primaryColor: '#EEF4FF',
+      primaryTextColor: '#1a2a4a',
+      primaryBorderColor: '#3B82F6',
+      lineColor: '#7A8BA6',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      fontSize: '13px'
+    }
+  });
+
+  // Fix SVG sizing after render
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(fixSvgSize, 900);
+  });
+
+  function fixSvgSize() {
+    document.querySelectorAll('.mermaid svg').forEach(svg => {
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.style.width = '100%';
+      svg.style.minWidth = '900px';
+      svg.style.height = 'auto';
+    });
+  }
+
+  async function reinitMermaid() {
+    const el = document.getElementById('mermaidChart');
+    if (!el) return;
+    el.removeAttribute('data-processed');
+    const svg = el.querySelector('svg');
+    if (svg) svg.remove();
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      flowchart: { curve: 'basis', useMaxWidth: false }
+    });
+    try { await mermaid.run({ nodes: [el] }); } catch(e) {}
+    setTimeout(fixSvgSize, 400);
+  }
+
+  // ── Tabs ──
+  function switchTab(tab) {
+    ['flowchart','swimlane','checklist'].forEach(t => {
+      document.getElementById('tab-'+t).classList.toggle('active', t === tab);
+      document.getElementById('view-'+t).classList.toggle('active', t === tab);
+    });
+    if (tab === 'checklist') buildChecklist();
+    if (tab !== 'swimlane') clearStatusFilter();
+    closeDrawer();
+  }
+
+  // ── Role chips ──
+  function highlightRole(role) {
+    const item = document.getElementById('legend-'+role);
+    const wasActive = item && item.classList.contains('active');
+    document.querySelectorAll('.legend-item').forEach(i => i.classList.remove('active'));
+    if (!wasActive && item) item.classList.add('active');
+  }
+
+  // ── Role detail data ──
+  const roleData = {
+    ht:     { title: 'Headteacher — Requesting Academy', badge: 'Requesting Academy', color: '#3B82F6', bg: '#DBEAFE', desc: 'The Headteacher drives the deployment request, approves the final brief, and acts on SLE recommendations throughout.', blocks: [{ title: 'Responsibilities', items: ['Identifies school improvement need requiring specialist support','Approves submission of deployment request','Attends PDI scoping call and agrees objectives','Reviews and signs off the final deployment brief (Stage 6)','Engages actively with SLE programme and staff','Completes end-of-deployment evaluation survey'] }, { title: 'Key Stages', items: ['Stage 1 — Deployment Request','Stage 2 — Needs & Scoping','Stage 6 — Requesting HT Final Sign-off','Stage 9 — Review & Closure'] }] },
+    slt:    { title: 'SLT Member — Requesting Academy', badge: 'Requesting Academy', color: '#3B82F6', bg: '#DBEAFE', desc: 'SLT members define the specific development priorities and support implementation of the SLE programme.', blocks: [{ title: 'Responsibilities', items: ['Articulates specific development objectives for deployment','Defines measurable success criteria','Liaises directly with SLE during visits','Provides evidence and context to SLE','Completes mid-point feedback for PDI','Reviews impact against original success criteria at close'] }, { title: 'Key Stages', items: ['Stage 2 — Needs & Scoping','Stage 8 — Deployment Active','Stage 9 — Review & Closure'] }] },
+    admin:  { title: 'Admin / Coordinator — Requesting Academy', badge: 'Requesting Academy', color: '#3B82F6', bg: '#DBEAFE', desc: 'The admin coordinator manages the logistics of the deployment, from initial form submission through to scheduling visits.', blocks: [{ title: 'Responsibilities', items: ['Completes and submits the SLE Deployment Request Form','Coordinates visit scheduling and room bookings','Manages communications with the PDI team','Maintains internal records and deployment logs','Distributes information to relevant staff'] }, { title: 'Key Stages', items: ['Stage 1 — Deployment Request','Stage 7 — PDI Confirmation','Stage 8 — Deployment Active (logistics)'] }] },
+    sle:    { title: 'Specialist Leader of Education (SLE)', badge: 'Home Academy', color: '#8B5CF6', bg: '#EDE9FE', desc: 'The SLE is the specialist practitioner deployed to support the requesting school. They design and deliver the agreed programme.', blocks: [{ title: 'Responsibilities', items: ['Reviews deployment brief and confirms capacity and consent (Stage 5)','Plans a structured programme aligned to agreed objectives','Delivers all agreed sessions at the requesting academy','Maintains detailed session logs and progress notes','Submits final written impact report to PDI','Engages constructively with requesting school staff'] }, { title: 'Key Stages', items: ['Stage 5 — SLE Agreement & Consent','Stage 8 — Deployment Active','Stage 9 — Review & Closure'] }] },
+    homeht: { title: 'Headteacher — Home Academy', badge: 'Home Academy', color: '#8B5CF6', bg: '#EDE9FE', desc: 'The Home Academy Headteacher is the gatekeeper for SLE release, ensuring the deployment does not compromise home school provision.', blocks: [{ title: 'Responsibilities', items: ['Receives deployment brief from PDI','Reviews SLE capacity and school calendar before approving','Formally approves or declines SLE release (Stage 4)','Monitors SLE workload throughout the deployment','Countersigns the SLE impact record at closure','Raises any concerns about SLE capacity with PDI'] }, { title: 'Key Stages', items: ['Stage 4 — Home HT Approval','Stage 8 — Deployment Active (monitoring)','Stage 9 — Review & Closure'] }] },
+    pdi:    { title: 'PDI Team — Co-op Academies Trust', badge: 'Co-op Academies Trust', color: '#007D8A', bg: '#CCFBF1', desc: 'The PDI Team is the central coordinator and quality assurer for all SLE deployments across the Trust.', blocks: [{ title: 'Responsibilities', items: ['Receives and logs all deployment requests','Leads scoping call and drafts the deployment brief','Searches the SLE register and identifies best match','Manages all approval communications with Home HT and SLE','Issues the formal deployment agreement','Confirms dates, objectives and funding arrangements','Monitors progress via mid-point check-in','Collates all impact evidence and archives cases','Maintains and updates the Trust SLE register'] }, { title: 'Key Stages', items: ['All stages — PDI is active throughout the full workflow'] }] }
+  };
+
+  // ── Stage detail data ──
+  const stageData = {
+    S1: { badge: 'Stage 1', color: '#3B82F6', bg: '#DBEAFE', title: 'Deployment Request', desc: 'The Requesting Academy identifies a school improvement need requiring specialist support. The admin team completes and submits the PDI SLE Deployment Request Form.', blocks: [{ title: 'Requesting Academy Actions', items: ['HT identifies specific development need','SLT agrees priority and strategic fit','Admin completes SLE request form','Form submitted to PDI team'] }, { title: 'PDI Actions', items: ['Acknowledges receipt within 5 working days','Logs case reference number','Assigns case to PDI lead'] }] },
+    S2: { badge: 'Stage 2', color: '#3B82F6', bg: '#DBEAFE', title: 'Needs Identification & Scoping', desc: 'PDI leads a scoping call with the Requesting Academy to define objectives, timeline, expected outcomes and success criteria for the deployment.', blocks: [{ title: 'Requesting Academy Actions', items: ['Attend PDI scoping call','Define specific measurable objectives','Agree deployment timeline and session frequency','Confirm in-school capacity and point of contact'] }, { title: 'PDI Actions', items: ['Leads scoping call','Drafts full deployment brief','Records outcomes and success criteria','Proceeds to SLE matching'] }] },
+    S3: { badge: 'Stage 3 — PDI', color: '#007D8A', bg: '#CCFBF1', title: 'PDI Review & SLE Match', desc: 'PDI reviews the deployment brief against the SLE register to identify the best-matched specialist based on expertise, specialism, geography and availability.', blocks: [{ title: 'Match Criteria', items: ['Subject / phase specialism alignment','Geographic proximity to requesting school','SLE current availability and workload','Prior experience with similar needs','No conflict of interest'] }, { title: 'Outcomes', items: ['Match found → proceed to Home HT Approval (Stage 4)','No match → PDI advises Requesting HT of alternatives or resubmission timeline'] }] },
+    S4: { badge: 'Stage 4 — Home HT', color: '#8B5CF6', bg: '#EDE9FE', title: 'Home Headteacher Approval', desc: 'The identified SLE\'s Home Academy Headteacher reviews the deployment brief and approves or declines the release of the SLE.', blocks: [{ title: 'Home HT Considerations', items: ['School calendar and SLE timetable','SLE current workload and active deployments','Impact on home school provision','Alignment with SLE development goals'] }, { title: 'Outcomes', items: ['Approved ✓ → SLE contacted for agreement (Stage 5)','Declined ✗ → PDI seeks alternative SLE → returns to Stage 3'] }] },
+    S5: { badge: 'Stage 5 — SLE', color: '#8B5CF6', bg: '#EDE9FE', title: 'SLE Agreement & Consent', desc: 'The matched SLE reviews the full deployment brief and confirms their capacity, interest and consent to undertake the deployment.', blocks: [{ title: 'SLE Review Points', items: ['Scope and objectives of deployment','Number of sessions and frequency','Reporting requirements','Alignment with personal specialism and CPD goals'] }, { title: 'Outcomes', items: ['SLE agrees ✓ → Requesting HT sign-off (Stage 6)','SLE declines ✗ → PDI re-matches alternative SLE → returns to Stage 3'] }] },
+    S6: { badge: 'Stage 6 — Requesting HT', color: '#B45309', bg: '#FFFBEB', title: 'Requesting HT Final Sign-off', desc: 'The Requesting Academy Headteacher reviews the completed deployment brief including the matched SLE profile and provides final sign-off.', blocks: [{ title: 'HT Review Points', items: ['Full deployment brief and objectives','SLE profile and relevant experience','Agreed timeline and session plan','Funding and cost implications confirmed by PDI'] }, { title: 'Outcomes', items: ['Approved ✓ → PDI issues agreement (Stage 7)','Revisions requested → returns to Stage 2 for rescoping'] }] },
+    S7: { badge: 'Stage 7 — PDI', color: '#007D8A', bg: '#CCFBF1', title: 'PDI Confirmation & Agreement', desc: 'PDI issues the formal deployment agreement, confirms all dates, notifies all parties and confirms funding before deployment begins.', blocks: [{ title: 'PDI Actions', items: ['Issues signed deployment agreement to all parties','Confirms session dates in PDI calendar','Notifies Requesting Academy, Home Academy and SLE','Confirms funding source and payment schedule','Opens case monitoring file'] }, { title: 'All Parties Receive', items: ['Countersigned deployment agreement','Confirmed schedule and contact details','PDI monitoring and reporting expectations'] }] },
+    S8: { badge: 'Stage 8 — Active', color: '#00B140', bg: '#DCFCE7', title: 'Deployment Active', desc: 'The SLE visits the Requesting Academy and delivers the agreed programme. PDI monitors progress throughout.', blocks: [{ title: 'During Deployment', items: ['SLE delivers agreed sessions on scheduled dates','Admin coordinates logistics and room bookings','PDI conducts mid-point check-in with both schools','SLE maintains session log and progress notes','HT / SLT engages actively with SLE recommendations'] }, { title: 'PDI Monitoring', items: ['Mid-point review meeting or survey','Flag any concerns or adjustments needed','Confirm deployment remains on track'] }] },
+    S9: { badge: 'Stage 9 — Complete', color: '#00B140', bg: '#DCFCE7', title: 'Review & Closure', desc: 'Deployment concludes with impact evaluation, reporting and case archiving. PDI may offer extension or renewal.', blocks: [{ title: 'Evaluation Actions', items: ['Requesting HT completes impact evaluation survey','SLE submits final written impact report to PDI','SLT reviews outcomes against original success criteria','Home HT reviews SLE deployment record'] }, { title: 'PDI Closure', items: ['Collates all impact evidence','Archives case file','Updates SLE register with deployment record','Decision: extend / renew OR case closed'] }] }
+  };
+
+  function selectRole(roleId) {
+    document.querySelectorAll('.role-chip').forEach(c => c.classList.remove('active'));
+    const chip = document.getElementById('chip-' + roleId);
+    if (chip) chip.classList.add('active');
+    const d = roleData[roleId];
+    if (d) openDrawer(d);
+  }
+
+  function openStageDetail(stageId) {
+    const d = stageData[stageId];
+    if (d) openDrawer(d);
+  }
+
+  function openDrawer(d) {
+    document.getElementById('drawerBadge').textContent = d.badge;
+    document.getElementById('drawerBadge').style.background = d.bg;
+    document.getElementById('drawerBadge').style.color = d.color;
+    document.getElementById('drawerBadge').style.border = `1px solid ${d.color}40`;
+    document.getElementById('drawerTitle').textContent = d.title;
+    document.getElementById('drawerDesc').textContent = d.desc;
+    document.getElementById('drawerBlocks').innerHTML = d.blocks.map(b => `
+      <div class="drawer-block">
+        <div class="drawer-block-title">${b.title}</div>
+        <ul class="drawer-list">${b.items.map(i => `<li>${i}</li>`).join('')}</ul>
+      </div>
+    `).join('');
+    document.getElementById('detailDrawer').classList.add('open');
+    document.getElementById('drawerOverlay').classList.add('visible');
+  }
+
+  function closeDrawer() {
+    document.getElementById('detailDrawer').classList.remove('open');
+    document.getElementById('drawerOverlay').classList.remove('visible');
+    document.querySelectorAll('.role-chip').forEach(c => c.classList.remove('active'));
+  }
+
+  // ── Checklist Builder ──
+  function buildChecklist() {
+    const grid = document.getElementById('checklistGrid');
+    if (grid.children.length > 0) return;
+
+    const stages = [
+      { id:'S1', label:'Stage 1', title:'Deployment Request', color:'#3B82F6', bg:'#DBEAFE', items:['Need identified by HT / SLT','SLE Deployment Request Form completed','Form submitted to PDI','Acknowledgement received from PDI'] },
+      { id:'S2', label:'Stage 2', title:'Needs & Scoping', color:'#3B82F6', bg:'#DBEAFE', items:['PDI scoping call attended','Objectives agreed and documented','Success criteria defined','Timeline and session frequency confirmed','Deployment brief approved by HT'] },
+      { id:'S3', label:'Stage 3 — PDI', title:'PDI Review & Match', color:'#007D8A', bg:'#CCFBF1', items:['Deployment brief reviewed by PDI','SLE register searched','SLE match identified','Match communicated to Requesting Academy'] },
+      { id:'S4', label:'Stage 4', title:'Home HT Approval', color:'#8B5CF6', bg:'#EDE9FE', items:['Brief sent to Home Academy HT','HT reviews SLE capacity','Approval received from Home HT','Decision recorded by PDI'] },
+      { id:'S5', label:'Stage 5', title:'SLE Agreement', color:'#8B5CF6', bg:'#EDE9FE', items:['Brief sent to SLE by PDI','SLE reviews scope and objectives','SLE confirms consent and capacity','PDI records SLE agreement'] },
+      { id:'S6', label:'Stage 6', title:'Requesting HT Sign-off', color:'#B45309', bg:'#FFFBEB', items:['Full brief sent to Requesting HT','HT reviews SLE profile','HT reviews timeline and funding','Formal sign-off received','Any revisions returned to Stage 2'] },
+      { id:'S7', label:'Stage 7 — PDI', title:'PDI Confirmation', color:'#007D8A', bg:'#CCFBF1', items:['Deployment agreement drafted','Agreement countersigned by all parties','Session dates confirmed in PDI calendar','Funding arrangements confirmed','All parties notified'] },
+      { id:'S8', label:'Stage 8', title:'Deployment Active', color:'#166534', bg:'#DCFCE7', items:['Session 1 delivered','SLE session logs maintained','Mid-point check-in completed with PDI','All sessions delivered as scheduled','Admin coordinates logistics throughout'] },
+      { id:'S9', label:'Stage 9', title:'Review & Closure', color:'#166534', bg:'#DCFCE7', items:['HT completes impact evaluation survey','SLE submits final impact report','SLT reviews outcomes vs success criteria','PDI archives case file','SLE register updated','Extension / renewal decision made'] }
+    ];
+
+    grid.innerHTML = stages.map((s, si) => `
+      <div class="checklist-card">
+        <div class="cc-header" style="background:${s.bg}; border-color:${s.color};">
+          <div class="cc-num" style="background:${s.color}; color:${s.color==='#B45309'?'white':'white'};">${si+1}</div>
+          <div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${s.color};opacity:0.8;">${s.label}</div>
+            <div style="font-size:var(--text-sm);font-weight:700;color:${s.color};">${s.title}</div>
+          </div>
+        </div>
+        <div class="cc-body">
+          ${s.items.map((item, i) => `
+            <label class="cc-item">
+              <input type="checkbox" id="chk-${s.id}-${i}" style="accent-color:${s.color};" onchange="updateProgress('${s.id}',${s.items.length},'${s.color}')">
+              <span>${item}</span>
+            </label>
+          `).join('')}
+          <div class="cc-progress-bar">
+            <div class="cc-progress-fill" id="prog-${s.id}" style="width:0%;background:${s.color};"></div>
+          </div>
+          <div class="cc-progress-label" id="prog-label-${s.id}">0 / ${s.items.length} complete</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function updateProgress(stageId, total) {
+    const checked = document.querySelectorAll(`[id^="chk-${stageId}-"]:checked`).length;
+    document.getElementById(`prog-${stageId}`).style.width = (checked / total * 100) + '%';
+    document.getElementById(`prog-label-${stageId}`).textContent = `${checked} / ${total} complete`;
+  }
+
+  // ── Status Filter ──
+  let activeStatusFilter = null;
+
+  function filterStatus(status) {
+    // If clicking the same filter again, clear it
+    if (activeStatusFilter === status) {
+      clearStatusFilter();
+      return;
+    }
+    activeStatusFilter = status;
+
+    // Update legend item active states
+    ['legend-approval','legend-complete','legend-declined'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
+    const legendMap = {
+      'awaiting-approval': 'legend-approval',
+      'completed': 'legend-complete',
+      'declined': 'legend-declined'
+    };
+    const activeEl = document.getElementById(legendMap[status]);
+    if (activeEl) activeEl.classList.add('active');
+
+    // Apply dim/highlight to swimlane rows
+    document.querySelectorAll('.swimlane-row').forEach(row => {
+      const rowStatus = row.getAttribute('data-status') || '';
+      if (rowStatus.split(' ').includes(status)) {
+        row.classList.remove('status-dimmed');
+        row.classList.add('status-highlighted');
+      } else {
+        row.classList.remove('status-highlighted');
+        row.classList.add('status-dimmed');
+      }
+    });
+
+    // Switch to swimlane tab if not already there
+    const swimlaneView = document.getElementById('view-swimlane');
+    if (swimlaneView && !swimlaneView.classList.contains('active')) {
+      switchTab('swimlane');
+    }
+
+    // Show/update clear badge in swimlane header
+    showFilterBadge(status);
+  }
+
+  function clearStatusFilter() {
+    activeStatusFilter = null;
+    ['legend-approval','legend-complete','legend-declined'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
+    document.querySelectorAll('.swimlane-row').forEach(row => {
+      row.classList.remove('status-dimmed','status-highlighted');
+    });
+    const badge = document.getElementById('filterBadge');
+    if (badge) badge.remove();
+  }
+
+  function showFilterBadge(status) {
+    let badge = document.getElementById('filterBadge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.id = 'filterBadge';
+      badge.className = 'filter-active-badge';
+      badge.onclick = clearStatusFilter;
+      const header = document.querySelector('.swimlane-container .swimlane-header');
+      if (header) header.appendChild(badge);
+    }
+    const labels = {
+      'awaiting-approval': '✕ Clear: Awaiting Approval',
+      'completed': '✕ Clear: Completed',
+      'declined': '✕ Clear: Declined'
+    };
+    badge.textContent = labels[status] || '✕ Clear filter';
+  }
+
+</script>
+
+</body>
+</html>
